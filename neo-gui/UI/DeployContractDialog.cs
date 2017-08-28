@@ -15,6 +15,8 @@ namespace Neo.UI
             InitializeComponent();
         }
 
+        public string deployedScriptHash;
+
         public InvocationTransaction GetTransaction()
         {
             byte[] script = textBox8.Text.HexToBytes();
@@ -27,7 +29,8 @@ namespace Neo.UI
             string email = textBox4.Text;
             string description = textBox5.Text;
 
-            InformationBox.Show(script.ToScriptHash().ToString(), "This is the Script Hash for your Smart Contract:", "Script Hash");
+            deployedScriptHash = script.ToScriptHash().ToString();
+            //InformationBox.Show(script.ToScriptHash().ToString(), "This is the Script Hash for your Smart Contract:", "Script Hash");
 
             using (ScriptBuilder sb = new ScriptBuilder())
             {
@@ -66,8 +69,7 @@ namespace Neo.UI
 
         private void button2_Click(object sender, EventArgs e)
         {
-            MainForm parent = (MainForm)this.Owner;
-            parent.scListAdd("Deployed ScriptHash", textBox1.Text, textBox8.Text.HexToBytes().ToScriptHash().ToString(), true);
+            MainForm.Instance.scListAdd(textBox8.Text.HexToBytes().ToScriptHash().ToString(), true);
         }
     }
 }

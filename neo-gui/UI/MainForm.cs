@@ -21,11 +21,18 @@ using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Linq;
+using System.Web.Script.Serialization;
 
 namespace Neo.UI
 {
     internal partial class MainForm : Form
     {
+        public SmartContractList scList = new SmartContractList();
+        public static string smartContractJSON = Application.StartupPath + "\\smart-contracts.json";            // json storage of known smart contracts
+        public static string smartContractText = Application.StartupPath + "\\smartcontracts.txt";              // legacy storage in plain text - can probably be removed
+        public List<Dictionary<string, string>> smartContractList = new List<Dictionary<string, string>>();     // a list of all known smart contracts
+        public static MainForm Instance = null;                                                                 // save a copy of mainform instance to be used by subforms
+
         private static readonly UInt160 RecycleScriptHash = new[] { (byte)OpCode.PUSHT }.ToScriptHash();
         private bool balance_changed = false;
         private DateTime persistence_time = DateTime.MinValue;
@@ -33,6 +40,8 @@ namespace Neo.UI
         public MainForm(XDocument xdoc = null)
         {
             InitializeComponent();
+            Instance = this;
+
             StateReader.Log += StateReader_Log;
 
             if (xdoc != null)
@@ -623,12 +632,15 @@ namespace Neo.UI
         private void deployContractToolStripMenuItem_Click(object sender, EventArgs e)
         {
             InvocationTransaction tx;
+            String deployedScriptHash;
             using (DeployContractDialog dialog = new DeployContractDialog())
             {
                 if (dialog.ShowDialog(this) != DialogResult.OK) return;
                 tx = dialog.GetTransaction();
+                deployedScriptHash = dialog.deployedScriptHash;
             }
-            using (InvokeContractDialog dialog = new InvokeContractDialog(tx))
+
+            using (InvokeContractDialog dialog = new InvokeContractDialog(tx, deployedScriptHash))
             {
                 if (dialog.ShowDialog() != DialogResult.OK) return;
                 tx = dialog.GetTransaction();
@@ -957,24 +969,70 @@ namespace Neo.UI
             }
         }
 
-        private SmartContractList scList = new SmartContractList();
-        public void scListAdd(string scType, string scName, string scMessage, bool newContract)
+        public void scListAdd(string scHash, bool newContract)
         {
-            scList.AddSmartContract(scType, scName, scMessage, newContract);
+            if (newContract)
+            {
+                Dictionary<string, string> contract = new Dictionary<string, string>
+                {
+                    ["ContractHash"] = scHash
+                };
+
+                smartContractList.Add(contract);
+                writeSmartContractList();
+            }
+
+            scList.AddSmartContract(scHash);
+
         }
 
         private void scListLoad()
         {
-            if (File.Exists(Application.StartupPath + "\\smartcontracts.txt"))
+            UInt160 ignore;
+            JavaScriptSerializer jsonHelper = new JavaScriptSerializer();
+
+            if (File.Exists(smartContractText))
             {
-                UInt160 ignore;
-                String[] smartContracts = File.ReadAllLines(Application.StartupPath + "\\smartcontracts.txt");
+                String[] smartContracts = File.ReadAllLines(smartContractText);
                 foreach (var smartContract in smartContracts)
                 {
                     string[] parameters = smartContract.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                    if (UInt160.TryParse(parameters[2], out ignore)) scListAdd(parameters[0], parameters[1], parameters[2], false);
+                    if (UInt160.TryParse(parameters[2], out ignore))
+                    {
+                        Dictionary<string, string> contract = new Dictionary<string, string>();
+                        contract["ContractHash"] = parameters[2];
+                        smartContractList.Add(contract);
+                    }
+                }
+                writeSmartContractList();
+                File.Delete(smartContractText);
+            }
+
+            smartContractList = jsonHelper.Deserialize<List<Dictionary<string, string>>>(File.ReadAllText(smartContractJSON));
+            foreach (Dictionary<string, string> contract in smartContractList)
+            {
+                if (UInt160.TryParse(contract["ContractHash"], out ignore))
+                {
+                    scListAdd(contract["ContractHash"], false);
                 }
             }
+        }
+
+        public void writeSmartContractList()
+        {
+            if (!File.Exists(smartContractJSON))
+            {
+                File.Create(smartContractJSON);
+            }
+
+            int numContracts = smartContractList.Count;
+            if (numContracts > 0)
+            {
+
+                JavaScriptSerializer jsonHelper = new JavaScriptSerializer();
+                File.WriteAllText(MainForm.smartContractJSON, jsonHelper.Serialize(smartContractList));
+            }
+
         }
 
         private void smartContractWatchlistToolStripMenuItem_Click(object sender, EventArgs e)
