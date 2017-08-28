@@ -59,21 +59,25 @@ namespace Neo.UI
          */
         private void UpdateScript()
         {
-            string scriptByteCode = parametersToByteCode(requiredParameters);
+            string scriptByteCode = parametersToByteCode(requiredParameters, true);
             txtCustomScript.Text = scriptByteCode;
-            txtCustomScriptCopy.Text = txtCustomScript.Text;
 
-            string optionalParamsBytecode = parametersToByteCode(optionalParameters);
+            string optionalParamsBytecode = parametersToByteCode(optionalParameters, false);
             if (optionalParamsBytecode != null)
             {
-                txtCustomScriptCopy.Text = optionalParamsBytecode + txtCustomScript.Text;
+                txtCustomScript.Text = optionalParamsBytecode + txtCustomScript.Text;
+            } else
+            {
+                txtCustomScript.Text = "00" + txtCustomScript.Text;
+
             }
+            txtCustomScriptCopy.Text = txtCustomScript.Text;
         }
 
         /**
          * convert ContractParameter list to byte code
          */
-        private string parametersToByteCode(List<ContractParameter> parameterList)
+        private string parametersToByteCode(List<ContractParameter> parameterList, bool isAppCall)
         {
             using (ScriptBuilder sb = new ScriptBuilder())
             {
@@ -105,7 +109,7 @@ namespace Neo.UI
                             break;
                         case ContractParameterType.Array:
                             List<ContractParameter> arrayList = ((List<ContractParameter>)param.Value);
-                            sb.EmitPush(parametersToByteCode(arrayList).HexToBytes());
+                            sb.EmitPush(parametersToByteCode(arrayList, false).HexToBytes());
                             break;
                     }
                 }
@@ -115,8 +119,15 @@ namespace Neo.UI
                     return null;
                 }
 
-                sb.EmitPush(parametersAdded);
-                sb.Emit(OpCode.PACK);
+                if (isAppCall)
+                {
+                    sb.EmitAppCall(scriptHash.ToArray());
+                }
+                else
+                {
+                    sb.EmitPush(parametersAdded);
+                    sb.Emit(OpCode.PACK);
+                }
                 return sb.ToArray().ToHexString();
             }
 

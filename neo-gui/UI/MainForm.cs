@@ -21,6 +21,8 @@ using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml.Linq;
+using System.Numerics;
+using System.Web.Script.Serialization;
 
 namespace Neo.UI
 {
@@ -1082,10 +1084,10 @@ namespace Neo.UI
         {
             scList.Show();
         }
+
+        private void clearLogMenuItem_Click(object sender, EventArgs e)
+        {
+            listView4.Items.Clear();
+        }
     }
-}
-
-using System.Numerics;
-
-using System.Web.Script.Serialization;
-
+}
