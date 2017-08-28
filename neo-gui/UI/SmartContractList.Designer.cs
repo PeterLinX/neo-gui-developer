@@ -94,7 +94,7 @@
             // 
             this.columnHeader5.Name = "columnHeader5";
             this.columnHeader5.Text = "Status";
-            this.columnHeader5.Width = 110;
+            this.columnHeader5.Width = 90;
             // 
             // columnHeader4
             // 

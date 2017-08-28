@@ -93,7 +93,7 @@ namespace Neo.UI
                     Item.SubItems[4].ForeColor = Color.Green;
                 }
             }
-        }
+            }
 
         private void CopySHtoolStripMenuItem_Click(object sender, EventArgs e)
         {

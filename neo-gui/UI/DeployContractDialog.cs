@@ -71,5 +71,13 @@ namespace Neo.UI
         {
             MainForm.Instance.scListAdd(textBox8.Text.HexToBytes().ToScriptHash().ToString(), true);
         }
+
+        private void textBox5_KeyDown(object sender, KeyEventArgs e) {
+            if (e.KeyValue == 9) {
+                // tab in description should just jump to the next control
+                e.SuppressKeyPress = true;
+                SelectNextControl((Control)sender, true, true, true, true);
+            }
+        }
     }
 }
